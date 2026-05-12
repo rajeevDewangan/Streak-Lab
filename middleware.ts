@@ -3,7 +3,7 @@ import { refreshSupabaseSession } from "@/lib/supabase/proxy";
 
 const PUBLIC_PATHS = ["/login", "/auth"];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { response, user } = await refreshSupabaseSession(request);
 
   const path = request.nextUrl.pathname;
