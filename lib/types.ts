@@ -30,6 +30,20 @@ export type EntryWithRefs = Entry & {
   profile: Pick<Profile, "id" | "name" | "avatar_url"> | null;
 };
 
+export type CategoryNote = {
+  id: string;
+  category_id: string;
+  user_id: string;
+  topic: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CategoryNoteWithAuthor = CategoryNote & {
+  author: Pick<Profile, "id" | "name" | "avatar_url"> | null;
+};
+
 export type StreakInfo = {
   current: number;
   longest: number;

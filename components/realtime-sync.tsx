@@ -23,6 +23,7 @@ export function RealtimeSync() {
       .channel("streak-lab-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "entries" }, ping)
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, ping)
+      .on("postgres_changes", { event: "*", schema: "public", table: "category_notes" }, ping)
       .subscribe();
 
     return () => {

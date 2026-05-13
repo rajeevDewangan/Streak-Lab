@@ -43,8 +43,8 @@ create index if not exists entries_category_idx on public.entries(category_id, c
 create index if not exists entries_recent_idx on public.entries(created_at desc);
 
 ------------------------------------------------------------
--- Signup lock: cap auth.users at 2.
--- Runs before auth.users insert. If 2 users already exist, blocks.
+-- Signup lock: cap auth.users at 5.
+-- Runs before auth.users insert. If 5 users already exist, blocks.
 ------------------------------------------------------------
 create or replace function public.enforce_user_cap()
 returns trigger
@@ -55,8 +55,8 @@ declare
   current_count int;
 begin
   select count(*) into current_count from auth.users;
-  if current_count >= 2 then
-    raise exception 'Signups are closed: this app is locked to 2 users.';
+  if current_count >= 5 then
+    raise exception 'Signups are closed: this app is locked to 5 users.';
   end if;
   return new;
 end;
@@ -206,6 +206,45 @@ create policy "chat_messages delete own"
   to authenticated using (auth.uid() = user_id);
 
 ------------------------------------------------------------
+-- Category notes / guides: per-category long-form notes from any user.
+-- Readable by all authed users; writes scoped to author.
+------------------------------------------------------------
+create table if not exists public.category_notes (
+  id uuid primary key default gen_random_uuid(),
+  category_id uuid not null references public.categories(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  topic text not null check (length(trim(topic)) > 0),
+  content text not null check (length(trim(content)) > 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists category_notes_category_idx
+  on public.category_notes(category_id, created_at desc);
+
+alter table public.category_notes enable row level security;
+
+drop policy if exists "category_notes read authed" on public.category_notes;
+create policy "category_notes read authed"
+  on public.category_notes for select
+  to authenticated using (true);
+
+drop policy if exists "category_notes insert own" on public.category_notes;
+create policy "category_notes insert own"
+  on public.category_notes for insert
+  to authenticated with check (auth.uid() = user_id);
+
+drop policy if exists "category_notes update own" on public.category_notes;
+create policy "category_notes update own"
+  on public.category_notes for update
+  to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "category_notes delete own" on public.category_notes;
+create policy "category_notes delete own"
+  on public.category_notes for delete
+  to authenticated using (auth.uid() = user_id);
+
+------------------------------------------------------------
 -- Realtime: publish the three tables
 ------------------------------------------------------------
 do $$
@@ -221,7 +260,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['entries', 'categories', 'profiles']
+  foreach t in array array['entries', 'categories', 'profiles', 'category_notes']
   loop
     if not exists (
       select 1 from pg_publication_tables

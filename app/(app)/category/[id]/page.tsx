@@ -1,12 +1,15 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Plus, ChevronLeft } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { loadAppData } from "@/lib/data";
+import { getSupabaseServer, getSession } from "@/lib/supabase/server";
 import { Heatmap } from "@/components/heatmap";
 import { FeedItem } from "@/components/feed-item";
 import { CatIcon } from "@/components/ui/icon";
 import { computeStreak } from "@/lib/streak";
 import { CategoryActions } from "./category-actions";
+import { CategoryNotes } from "./category-notes";
+import type { CategoryNote, CategoryNoteWithAuthor, Profile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +19,33 @@ export default async function CategoryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { categories, entries } = await loadAppData();
+  const user = await getSession();
+  if (!user) redirect("/login");
+
+  const { categories, entries, profiles } = await loadAppData();
   const category = categories.find((c) => c.id === id);
   if (!category) notFound();
 
   const catEntries = entries.filter((e) => e.category_id === id);
   const streak = computeStreak(catEntries.map((e) => e.local_date));
+
+  const supabase = await getSupabaseServer();
+  const { data: rawNotes } = await supabase
+    .from("category_notes")
+    .select("id,category_id,user_id,topic,content,created_at,updated_at")
+    .eq("category_id", id)
+    .order("created_at", { ascending: false });
+
+  const profileMap = new Map<string, Profile>(profiles.map((p) => [p.id, p]));
+  const notes: CategoryNoteWithAuthor[] = ((rawNotes ?? []) as CategoryNote[]).map((n) => {
+    const author = profileMap.get(n.user_id);
+    return {
+      ...n,
+      author: author
+        ? { id: author.id, name: author.name, avatar_url: author.avatar_url }
+        : null,
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,6 +78,13 @@ export default async function CategoryPage({
         <h2 className="text-sm font-semibold mb-3">Heatmap (both users)</h2>
         <Heatmap entries={entries} categoryId={id} />
       </section>
+
+      <CategoryNotes
+        categoryId={id}
+        categoryColor={category.color}
+        notes={notes}
+        currentUserId={user.id}
+      />
 
       <section>
         <h2 className="text-sm font-semibold mb-3">All logs</h2>
