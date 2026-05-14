@@ -31,9 +31,9 @@ export async function createCategoryNote(input: {
   if (!user) return { error: "Not signed in" };
 
   const topic = input.topic.trim();
-  const content = input.content.trim();
+  const content = input.content;
   if (!topic) return { error: "Topic is required" };
-  if (!content) return { error: "Write something first." };
+  if (!content.trim()) return { error: "Write something first." };
   if (!input.categoryId) return { error: "Missing category" };
 
   const supabase = await getSupabaseServer();
@@ -57,9 +57,9 @@ export async function updateCategoryNote(
   if (!user) return { error: "Not signed in" };
 
   const topic = patch.topic.trim();
-  const content = patch.content.trim();
+  const content = patch.content;
   if (!topic) return { error: "Topic is required" };
-  if (!content) return { error: "Write something first." };
+  if (!content.trim()) return { error: "Write something first." };
 
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase

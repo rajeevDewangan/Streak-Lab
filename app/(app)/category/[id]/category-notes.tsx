@@ -63,7 +63,7 @@ export function CategoryNotes({ categoryId, categoryColor, notes, currentUserId 
                   {n.topic}
                 </h3>
               </div>
-              <p className="text-xs text-[var(--color-fg-muted)] line-clamp-3 whitespace-pre-wrap">
+              <p className="font-mono text-[11px] text-[var(--color-fg-muted)] line-clamp-3 whitespace-pre overflow-hidden">
                 {n.content}
               </p>
               <div className="mt-auto flex items-center justify-between text-[11px] text-[var(--color-fg-dim)] pt-1">
@@ -239,7 +239,7 @@ function NoteViewer({
           </p>
         </div>
 
-        <div className="text-sm whitespace-pre-wrap break-words leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+        <div className="font-mono text-[13px] whitespace-pre leading-[1.75] max-h-[60vh] overflow-auto pr-1">
           <LinkifiedText text={note.content} />
         </div>
 
